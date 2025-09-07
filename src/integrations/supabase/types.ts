@@ -266,7 +266,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      decrement_trial_clips: {
+        Args: { user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       asset_type: "image" | "clip" | "video"
