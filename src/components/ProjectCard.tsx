@@ -11,9 +11,10 @@ interface ProjectCardProps {
     aspect: string;
     theme: string;
   };
+  onProjectClick: (projectId: string) => void;
 }
 
-export function ProjectCard({ project }: ProjectCardProps) {
+export function ProjectCard({ project, onProjectClick }: ProjectCardProps) {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "done":
@@ -43,7 +44,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer">
+    <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => onProjectClick(project.id)}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">{project.title}</CardTitle>

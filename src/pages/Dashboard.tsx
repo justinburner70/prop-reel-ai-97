@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { ProjectCard } from "@/components/ProjectCard";
 import { useNavigate } from "react-router-dom";
 import { CreateProjectModal } from "@/components/CreateProjectModal";
+import { ProjectDetailModal } from "@/components/ProjectDetailModal";
+import { DashboardStats } from "@/components/DashboardStats";
 import { toast } from "sonner";
 
 interface Project {
@@ -23,10 +25,16 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [userStats, setUserStats] = useState({
     totalProjects: 0,
     videosGenerated: 0,
-    freeClipsRemaining: 0
+    freeClipsRemaining: 0,
+    recentActivity: {
+      projectsThisWeek: 0,
+      videosThisWeek: 0
+    }
   });
 
   useEffect(() => {
@@ -71,23 +79,44 @@ const Dashboard = () => {
     // Count projects and completed videos
     const { data: projectData } = await supabase
       .from('projects')
-      .select('status')
+      .select('status, created_at, updated_at')
       .eq('user_id', user.id);
 
     const totalProjects = projectData?.length || 0;
     const videosGenerated = projectData?.filter(p => p.status === 'done').length || 0;
     const freeClipsRemaining = trialData?.free_clips_remaining || 0;
 
+    // Calculate recent activity (projects/videos from last 7 days)
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    
+    const recentProjects = projectData?.filter(p => 
+      new Date(p.created_at) >= oneWeekAgo
+    ) || [];
+    
+    const recentVideos = projectData?.filter(p => 
+      p.status === 'done' && new Date(p.updated_at) >= oneWeekAgo
+    ) || [];
+
     setUserStats({
       totalProjects,
       videosGenerated,
-      freeClipsRemaining
+      freeClipsRemaining,
+      recentActivity: {
+        projectsThisWeek: recentProjects.length,
+        videosThisWeek: recentVideos.length
+      }
     });
   };
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
+  };
+
+  const handleProjectClick = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    setShowDetailModal(true);
   };
 
   if (loading) {
@@ -130,37 +159,20 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Total Projects</CardDescription>
-              <CardTitle className="text-2xl">{userStats.totalProjects}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Videos Generated</CardDescription>
-              <CardTitle className="text-2xl">{userStats.videosGenerated}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Free Clips Remaining</CardDescription>
-              <CardTitle className="text-2xl">{userStats.freeClipsRemaining}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Current Plan</CardDescription>
-              <CardTitle className="text-lg">Free Trial</CardTitle>
-            </CardHeader>
-          </Card>
+        <div className="mb-8">
+          <DashboardStats stats={userStats} onRefresh={fetchUserStats} />
         </div>
 
         {/* Projects Grid */}
         <div className="space-y-6">
-          <h2 className="text-xl font-semibold">Your Projects</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Your Projects</h2>
+            {projects.length > 0 && (
+              <Button variant="outline" onClick={fetchProjects}>
+                Refresh
+              </Button>
+            )}
+          </div>
           
           {projects.length === 0 ? (
             <Card className="text-center py-12">
@@ -179,10 +191,12 @@ const Dashboard = () => {
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {projects.map((project) => (
-                <ProjectCard key={project.id} project={project} />
+                <ProjectCard key={project.id} project={project} onProjectClick={handleProjectClick} />
               ))}
             </div>
-        )}
+          )}
+        </div>
+
       </div>
 
       <CreateProjectModal 
@@ -190,7 +204,12 @@ const Dashboard = () => {
         onOpenChange={setShowCreateModal}
         onProjectCreated={fetchProjects}
       />
-      </div>
+
+      <ProjectDetailModal
+        open={showDetailModal}
+        onOpenChange={setShowDetailModal}
+        projectId={selectedProjectId}
+      />
     </div>
   );
 };
