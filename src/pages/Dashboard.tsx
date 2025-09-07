@@ -6,12 +6,23 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectCard } from "@/components/ProjectCard";
 import { useNavigate } from "react-router-dom";
+import { CreateProjectModal } from "@/components/CreateProjectModal";
 import { toast } from "sonner";
+
+interface Project {
+  id: string;
+  title: string;
+  status: string;
+  created_at: string;
+  aspect: string;
+  theme: string;
+}
 
 const Dashboard = () => {
   const { user, signOut, loading } = useAuth();
   const navigate = useNavigate();
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [userStats, setUserStats] = useState({
     totalProjects: 0,
     videosGenerated: 0,
@@ -113,7 +124,7 @@ const Dashboard = () => {
             <h1 className="text-3xl font-bold">Dashboard</h1>
             <p className="text-muted-foreground">Manage your video projects</p>
           </div>
-          <Button size="lg" className="text-lg px-6">
+          <Button size="lg" className="text-lg px-6" onClick={() => setShowCreateModal(true)}>
             <Plus className="h-5 w-5 mr-2" />
             New Project from Listing URL
           </Button>
@@ -159,7 +170,7 @@ const Dashboard = () => {
                 <p className="text-muted-foreground mb-6">
                   Create your first video from a real estate listing URL
                 </p>
-                <Button>
+                <Button onClick={() => setShowCreateModal(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Create First Project
                 </Button>
@@ -171,8 +182,14 @@ const Dashboard = () => {
                 <ProjectCard key={project.id} project={project} />
               ))}
             </div>
-          )}
-        </div>
+        )}
+      </div>
+
+      <CreateProjectModal 
+        open={showCreateModal}
+        onOpenChange={setShowCreateModal}
+        onProjectCreated={fetchProjects}
+      />
       </div>
     </div>
   );
