@@ -57,31 +57,7 @@ const Auth = () => {
       if (error) {
         toast.error(error.message);
       } else if (data.user) {
-        // Create profile
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([{
-            user_id: data.user.id,
-            email,
-            name
-          }]);
-
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-        }
-
-        // Create trial record
-        const { error: trialError } = await supabase
-          .from('trials')
-          .insert([{
-            user_id: data.user.id,
-            free_clips_remaining: 2
-          }]);
-
-        if (trialError) {
-          console.error('Trial creation error:', trialError);
-        }
-
+        // Profile and trial creation is handled by database trigger
         toast.success("Account created successfully! Please check your email to verify your account.");
       }
     } catch (error) {

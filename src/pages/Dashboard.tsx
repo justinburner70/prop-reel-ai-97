@@ -1,63 +1,89 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Video, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { Plus, Video, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { ProjectCard } from "@/components/ProjectCard";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const Dashboard = () => {
-  // Mock projects data
-  const projects = [
-    {
-      id: "1",
-      title: "Luxury Downtown Condo",
-      status: "done",
-      createdAt: "2024-01-15",
-      aspect: "9x16",
-      theme: "luxury"
-    },
-    {
-      id: "2", 
-      title: "Suburban Family Home",
-      status: "rendering",
-      createdAt: "2024-01-14",
-      aspect: "1x1",
-      theme: "clean"
-    },
-    {
-      id: "3",
-      title: "Modern Apartment",
-      status: "idle",
-      createdAt: "2024-01-13",
-      aspect: "16x9",
-      theme: "modern"
-    }
-  ];
+  const { user, signOut, loading } = useAuth();
+  const navigate = useNavigate();
+  const [projects, setProjects] = useState<any[]>([]);
+  const [userStats, setUserStats] = useState({
+    totalProjects: 0,
+    videosGenerated: 0,
+    freeClipsRemaining: 0
+  });
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "done":
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case "rendering":
-        return <Clock className="h-5 w-5 text-yellow-500 animate-spin" />;
-      case "error":
-        return <AlertCircle className="h-5 w-5 text-red-500" />;
-      default:
-        return <Clock className="h-5 w-5 text-muted-foreground" />;
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+      return;
+    }
+
+    if (user) {
+      fetchProjects();
+      fetchUserStats();
+    }
+  }, [user, loading, navigate]);
+
+  const fetchProjects = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching projects:', error);
+      toast.error('Failed to load projects');
+    } else {
+      setProjects(data || []);
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "done":
-        return "Completed";
-      case "rendering":
-        return "Rendering...";
-      case "queued":
-        return "Queued";
-      case "error":
-        return "Error";
-      default:
-        return "Draft";
-    }
+  const fetchUserStats = async () => {
+    if (!user) return;
+
+    // Fetch trial info
+    const { data: trialData } = await supabase
+      .from('trials')
+      .select('free_clips_remaining')
+      .eq('user_id', user.id)
+      .single();
+
+    // Count projects and completed videos
+    const { data: projectData } = await supabase
+      .from('projects')
+      .select('status')
+      .eq('user_id', user.id);
+
+    const totalProjects = projectData?.length || 0;
+    const videosGenerated = projectData?.filter(p => p.status === 'done').length || 0;
+    const freeClipsRemaining = trialData?.free_clips_remaining || 0;
+
+    setUserStats({
+      totalProjects,
+      videosGenerated,
+      freeClipsRemaining
+    });
   };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  if (loading) {
+    return <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="text-lg">Loading...</div>
+    </div>;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -70,8 +96,11 @@ const Dashboard = () => {
               <span className="text-2xl font-bold">PropVids</span>
             </div>
             <div className="flex items-center space-x-4">
-              <Button variant="ghost">Billing</Button>
-              <Button variant="ghost">Account</Button>
+              <span className="text-sm text-muted-foreground">Welcome, {user?.email}</span>
+              <Button variant="ghost" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
             </div>
           </div>
         </div>
@@ -95,19 +124,19 @@ const Dashboard = () => {
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Total Projects</CardDescription>
-              <CardTitle className="text-2xl">3</CardTitle>
+              <CardTitle className="text-2xl">{userStats.totalProjects}</CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Videos Generated</CardDescription>
-              <CardTitle className="text-2xl">1</CardTitle>
+              <CardTitle className="text-2xl">{userStats.videosGenerated}</CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Free Clips Remaining</CardDescription>
-              <CardTitle className="text-2xl">2</CardTitle>
+              <CardTitle className="text-2xl">{userStats.freeClipsRemaining}</CardTitle>
             </CardHeader>
           </Card>
           <Card>
@@ -139,35 +168,7 @@ const Dashboard = () => {
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {projects.map((project) => (
-                <Card key={project.id} className="hover:shadow-md transition-shadow cursor-pointer">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{project.title}</CardTitle>
-                      <div className="flex items-center space-x-2">
-                        {getStatusIcon(project.status)}
-                        <span className="text-sm text-muted-foreground">
-                          {getStatusText(project.status)}
-                        </span>
-                      </div>
-                    </div>
-                    <CardDescription>
-                      {project.aspect} • {project.theme} theme
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="aspect-video bg-muted rounded-md flex items-center justify-center mb-4">
-                      <Video className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                    <div className="flex justify-between items-center text-sm text-muted-foreground">
-                      <span>Created {new Date(project.createdAt).toLocaleDateString()}</span>
-                      {project.status === "done" && (
-                        <Button size="sm" variant="outline">
-                          Download
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                <ProjectCard key={project.id} project={project} />
               ))}
             </div>
           )}
