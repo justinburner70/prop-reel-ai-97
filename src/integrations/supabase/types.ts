@@ -14,7 +14,253 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      assets: {
+        Row: {
+          created_at: string
+          height: number | null
+          id: string
+          meta: Json | null
+          project_id: string
+          sort_order: number | null
+          type: Database["public"]["Enums"]["asset_type"]
+          url: string
+          width: number | null
+        }
+        Insert: {
+          created_at?: string
+          height?: number | null
+          id?: string
+          meta?: Json | null
+          project_id: string
+          sort_order?: number | null
+          type: Database["public"]["Enums"]["asset_type"]
+          url: string
+          width?: number | null
+        }
+        Update: {
+          created_at?: string
+          height?: number | null
+          id?: string
+          meta?: Json | null
+          project_id?: string
+          sort_order?: number | null
+          type?: Database["public"]["Enums"]["asset_type"]
+          url?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          aspect: Database["public"]["Enums"]["project_aspect"]
+          created_at: string
+          id: string
+          listing_url: string | null
+          status: Database["public"]["Enums"]["project_status"]
+          theme: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          aspect?: Database["public"]["Enums"]["project_aspect"]
+          created_at?: string
+          id?: string
+          listing_url?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
+          theme?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          aspect?: Database["public"]["Enums"]["project_aspect"]
+          created_at?: string
+          id?: string
+          listing_url?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
+          theme?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          customer_id: string | null
+          default_payment_method: string | null
+          id: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          tier: Database["public"]["Enums"]["subscription_tier"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          customer_id?: string | null
+          default_payment_method?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          tier?: Database["public"]["Enums"]["subscription_tier"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          customer_id?: string | null
+          default_payment_method?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          tier?: Database["public"]["Enums"]["subscription_tier"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      trials: {
+        Row: {
+          created_at: string
+          free_clips_remaining: number
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          free_clips_remaining?: number
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          free_clips_remaining?: number
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      usage_events: {
+        Row: {
+          count: number
+          created_at: string
+          id: string
+          project_id: string | null
+          type: Database["public"]["Enums"]["usage_event_type"]
+          user_id: string
+        }
+        Insert: {
+          count?: number
+          created_at?: string
+          id?: string
+          project_id?: string | null
+          type: Database["public"]["Enums"]["usage_event_type"]
+          user_id: string
+        }
+        Update: {
+          count?: number
+          created_at?: string
+          id?: string
+          project_id?: string | null
+          type?: Database["public"]["Enums"]["usage_event_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_logs: {
+        Row: {
+          created_at: string
+          id: string
+          payload: Json
+          provider: Database["public"]["Enums"]["webhook_provider"]
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          payload: Json
+          provider: Database["public"]["Enums"]["webhook_provider"]
+          status: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          payload?: Json
+          provider?: Database["public"]["Enums"]["webhook_provider"]
+          status?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +269,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      asset_type: "image" | "clip" | "video"
+      project_aspect: "9x16" | "1x1" | "16x9"
+      project_status: "idle" | "queued" | "rendering" | "done" | "error"
+      subscription_status: "active" | "canceled" | "past_due" | "incomplete"
+      subscription_tier: "starter" | "pro" | "agency"
+      usage_event_type: "trial_clip" | "paid_clip" | "render"
+      user_role: "user" | "admin"
+      webhook_provider: "stripe" | "runway" | "shotstack"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +403,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      asset_type: ["image", "clip", "video"],
+      project_aspect: ["9x16", "1x1", "16x9"],
+      project_status: ["idle", "queued", "rendering", "done", "error"],
+      subscription_status: ["active", "canceled", "past_due", "incomplete"],
+      subscription_tier: ["starter", "pro", "agency"],
+      usage_event_type: ["trial_clip", "paid_clip", "render"],
+      user_role: ["user", "admin"],
+      webhook_provider: ["stripe", "runway", "shotstack"],
+    },
   },
 } as const
