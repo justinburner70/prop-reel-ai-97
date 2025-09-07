@@ -45,13 +45,21 @@ export function CreateProjectModal({ open, onOpenChange, onProjectCreated }: Cre
 
     setLoading(true);
     try {
+      console.log('Analyzing URL:', listingUrl);
       const { data, error } = await supabase.functions.invoke('analyze-listing', {
         body: { url: listingUrl }
       });
 
+      console.log('Function response:', { data, error });
+
       if (error) {
+        console.error('Function invocation error:', error);
         toast.error("Failed to analyze listing URL");
-        console.error('Error:', error);
+        return;
+      }
+
+      if (!data) {
+        toast.error("No data returned from listing analysis");
         return;
       }
 
@@ -155,6 +163,14 @@ export function CreateProjectModal({ open, onOpenChange, onProjectCreated }: Cre
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Analyze"}
                 </Button>
               </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setListingUrl("https://example.com/demo-listing")}
+                type="button"
+              >
+                Use Demo URL
+              </Button>
             </div>
             
             <div className="text-xs text-muted-foreground space-y-1">

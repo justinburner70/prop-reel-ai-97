@@ -20,9 +20,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { url } = await req.json();
+    const requestData = await req.json();
+    console.log('Request received:', requestData);
+    
+    const { url } = requestData;
     
     if (!url) {
+      console.log('No URL provided in request');
       return new Response(
         JSON.stringify({ error: 'URL is required' }),
         { 
@@ -34,21 +38,63 @@ Deno.serve(async (req) => {
 
     console.log('Analyzing listing URL:', url);
 
+    // Handle demo URL
+    if (url === "https://example.com/demo-listing") {
+      console.log('Using demo listing data');
+      const demoData: ListingData = {
+        title: "Stunning Modern Downtown Condo",
+        description: "Beautiful 2-bedroom, 2-bathroom condo in the heart of downtown. Features modern finishes, stainless steel appliances, hardwood floors, and panoramic city views. Building amenities include fitness center, rooftop deck, and concierge service.",
+        images: [
+          "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop",
+          "https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&h=600&fit=crop",
+          "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=600&fit=crop"
+        ],
+        price: "$850,000",
+        address: "123 Main Street, Downtown District"
+      };
+      
+      return new Response(
+        JSON.stringify(demoData),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Validate URL format
+    try {
+      new URL(url);
+    } catch {
+      console.log('Invalid URL format:', url);
+      return new Response(
+        JSON.stringify({ error: 'Invalid URL format' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     // Fetch the webpage content
+    console.log('Fetching webpage content...');
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
       }
     });
 
+    console.log('Fetch response status:', response.status);
     if (!response.ok) {
+      console.log('Failed to fetch URL, status:', response.status);
       throw new Error(`Failed to fetch URL: ${response.status}`);
     }
 
+    console.log('Getting HTML content...');
     const html = await response.text();
+    console.log('HTML content length:', html.length);
     
-    // Extract listing data using simple regex patterns
-    // This is a basic implementation - in production you'd use proper HTML parsing
+    // Extract listing data using simple patterns
+    console.log('Extracting listing data...');
     const listingData: ListingData = {
       title: extractTitle(html, url),
       description: extractDescription(html),
@@ -57,7 +103,7 @@ Deno.serve(async (req) => {
       address: extractAddress(html)
     };
 
-    console.log('Extracted listing data:', listingData);
+    console.log('Successfully extracted listing data:', JSON.stringify(listingData, null, 2));
 
     return new Response(
       JSON.stringify(listingData),
@@ -68,11 +114,13 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Error analyzing listing:', error);
+    console.error('Error stack:', error.stack);
     
     return new Response(
       JSON.stringify({ 
         error: 'Failed to analyze listing',
-        details: error.message 
+        details: error.message,
+        type: error.name || 'Unknown error'
       }),
       { 
         status: 500, 
