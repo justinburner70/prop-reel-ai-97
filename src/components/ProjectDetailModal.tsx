@@ -42,6 +42,38 @@ export function ProjectDetailModal({ open, onOpenChange, projectId }: ProjectDet
   useEffect(() => {
     if (open && projectId) {
       fetchProjectDetails();
+      
+      // Set up real-time subscription for this project
+      const channel = supabase
+        .channel(`project-${projectId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'projects',
+            filter: `id=eq.${projectId}`
+          },
+          (payload) => {
+            console.log('Project detail updated:', payload);
+            setProject(payload.new as Project);
+            
+            // Show status update notifications
+            const updatedProject = payload.new as Project;
+            if (updatedProject.status === 'done') {
+              toast.success("Video generation completed!");
+            } else if (updatedProject.status === 'error') {
+              toast.error("Video generation failed");
+            } else if (updatedProject.status === 'rendering') {
+              toast.info("Video generation started");
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [open, projectId]);
 

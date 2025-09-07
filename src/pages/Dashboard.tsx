@@ -52,19 +52,63 @@ const Dashboard = () => {
   const fetchProjects = async () => {
     if (!user) return;
 
-    const { data, error } = await supabase
-      .from('projects')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching projects:', error);
-      toast.error('Failed to load projects');
-    } else {
+      if (error) throw error;
       setProjects(data || []);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      toast.error("Failed to load projects");
     }
   };
+
+  // Set up real-time subscription for project updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('project-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'projects',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Real-time project update:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            setProjects(prev => [payload.new as Project, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setProjects(prev => prev.map(project => 
+              project.id === payload.new.id ? payload.new as Project : project
+            ));
+            
+            // Show toast for important status changes
+            const newProject = payload.new as Project;
+            if (newProject.status === 'done') {
+              toast.success(`Video for "${newProject.title}" is ready!`);
+            } else if (newProject.status === 'error') {
+              toast.error(`Video generation failed for "${newProject.title}"`);
+            }
+          } else if (payload.eventType === 'DELETE') {
+            setProjects(prev => prev.filter(project => project.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   const fetchUserStats = async () => {
     if (!user) return;
